@@ -10,6 +10,8 @@ from app.cmd import (
 )
 
 LIBXRAY_MOD_NAME = "github.com/xtls/libxray"
+LIBXRAY_GO_VERSION = "1.26.2"
+XRAY_CORE_VERSION = "1bdb488c9ec09ea51e6899697d5b7437f3cf6eb2"
 
 
 class Builder(object):
@@ -34,6 +36,12 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "init", LIBXRAY_MOD_NAME])
         if ret.returncode != 0:
             raise Exception("go mod init failed")
+        ret = subprocess.run(["go", "get", f"github.com/xtls/xray-core@{XRAY_CORE_VERSION}"])
+        if ret.returncode != 0:
+            raise Exception("go get xray-core failed")
+        ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
+        if ret.returncode != 0:
+            raise Exception("go mod edit failed")
 
         ret = subprocess.run(
             [
@@ -154,6 +162,12 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "init", LIBXRAY_MOD_NAME])
         if ret.returncode != 0:
             raise Exception("go mod init failed")
+        ret = subprocess.run(["go", "get", f"github.com/xtls/xray-core@{XRAY_CORE_VERSION}"])
+        if ret.returncode != 0:
+            raise Exception("go get xray-core failed")
+        ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
+        if ret.returncode != 0:
+            raise Exception("go mod edit failed")
 
         ret = subprocess.run(
             [
