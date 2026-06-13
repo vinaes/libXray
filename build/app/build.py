@@ -11,7 +11,13 @@ from app.cmd import (
 
 LIBXRAY_MOD_NAME = "github.com/xtls/libxray"
 LIBXRAY_GO_VERSION = "1.26.2"
-XRAY_CORE_VERSION = "1bdb488c9ec09ea51e6899697d5b7437f3cf6eb2"
+# Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
+# original module path github.com/xtls/xray-core, so a replace directive pointing
+# at the fork repo resolves correctly. Pinned to v26.5.9 + fork patches
+# (safari_17 preset, custom spec hook) — the core version libXray is adapted to.
+XRAY_CORE_MOD = "github.com/xtls/xray-core"
+XRAY_CORE_FORK = "github.com/vinaes/xray-core"
+XRAY_CORE_VERSION = "24a5b97f303de04d8ed0347a22156ea47af656b9"
 
 
 class Builder(object):
@@ -36,12 +42,21 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "init", LIBXRAY_MOD_NAME])
         if ret.returncode != 0:
             raise Exception("go mod init failed")
-        ret = subprocess.run(["go", "get", f"github.com/xtls/xray-core@{XRAY_CORE_VERSION}"])
-        if ret.returncode != 0:
-            raise Exception("go get xray-core failed")
         ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
         if ret.returncode != 0:
-            raise Exception("go mod edit failed")
+            raise Exception("go mod edit go version failed")
+        # Redirect xray-core to the vinaes fork at the pinned revision.
+        ret = subprocess.run(
+            [
+                "go",
+                "mod",
+                "edit",
+                f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
+                f"-require={XRAY_CORE_MOD}@v0.0.0",
+            ]
+        )
+        if ret.returncode != 0:
+            raise Exception("go mod edit replace xray-core fork failed")
 
         ret = subprocess.run(
             [
@@ -162,12 +177,21 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "init", LIBXRAY_MOD_NAME])
         if ret.returncode != 0:
             raise Exception("go mod init failed")
-        ret = subprocess.run(["go", "get", f"github.com/xtls/xray-core@{XRAY_CORE_VERSION}"])
-        if ret.returncode != 0:
-            raise Exception("go get xray-core failed")
         ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
         if ret.returncode != 0:
-            raise Exception("go mod edit failed")
+            raise Exception("go mod edit go version failed")
+        # Redirect xray-core to the vinaes fork at the pinned revision.
+        ret = subprocess.run(
+            [
+                "go",
+                "mod",
+                "edit",
+                f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
+                f"-require={XRAY_CORE_MOD}@v0.0.0",
+            ]
+        )
+        if ret.returncode != 0:
+            raise Exception("go mod edit replace xray-core fork failed")
 
         ret = subprocess.run(
             [
