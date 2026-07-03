@@ -176,7 +176,7 @@ func TestClashShadowsocks_Plain(t *testing.T) {
 	require.NoError(t, json.Unmarshal(*ob.Settings, &s))
 	assert.Equal(t, "aes-128-gcm", s.Cipher)
 	assert.Equal(t, "secret", s.Password)
-	assert.True(t, s.UoT)
+	// UoT removed from xray-core's ShadowsocksClientConfig upstream.
 	assert.Nil(t, ob.StreamSetting)
 }
 

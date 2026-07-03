@@ -13,11 +13,13 @@ LIBXRAY_MOD_NAME = "github.com/xtls/libxray"
 LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
-# at the fork repo resolves correctly. Pinned to v26.5.9 + fork patches
-# (safari_17 preset, custom spec hook) — the core version libXray is adapted to.
+# at the fork repo resolves correctly. Pinned to the fork's main after the latest
+# XTLS/main merge (v1.260327.0-165-g1448e71a) + fork patches (safari_17 preset,
+# custom spec hook) — the core version libXray is adapted to. Keep this in sync
+# with the submodules/Xray-core pointer.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "24a5b97f303de04d8ed0347a22156ea47af656b9"
+XRAY_CORE_VERSION = "1448e71a506d5b78ee4c2cabc1602441d7963995"
 
 
 class Builder(object):
@@ -121,7 +123,10 @@ class Builder(object):
 
     def before_build(self):
         self.init_go_env()
-        self.download_geo()
+        # geo .dat files are not needed for this app (routing does not use them),
+        # and the upstream geo download is flaky — skip it so a dead geo source
+        # can't fail the whole bind.
+        # self.download_geo()
 
     def build(self):
         pass

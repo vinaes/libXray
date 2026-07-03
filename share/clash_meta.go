@@ -208,7 +208,8 @@ func (proxy ClashProxy) shadowsocksOutbound() (*conf.OutboundDetourConfig, error
 
 	settings.Cipher = proxy.Cipher
 	settings.Password = proxy.Password
-	settings.UoT = proxy.UdpOverTcp
+	// UoT (UDP-over-TCP) was removed from xray-core's ShadowsocksClientConfig
+	// upstream; the field no longer exists, so there is nothing to set here.
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
