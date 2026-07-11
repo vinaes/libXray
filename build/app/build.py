@@ -20,6 +20,15 @@ LIBXRAY_GO_VERSION = "1.26.2"
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
 XRAY_CORE_VERSION = "1448e71a506d5b78ee4c2cabc1602441d7963995"
+# Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
+# so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
+# in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
+# replaces must be injected here, not left in a committed go.mod (it gets wiped).
+# whitelist-bypass/relay is pulled transitively by wbypass's vksfu carrier.
+WBYPASS_MOD = "github.com/vinaes/wbypass"
+WBYPASS_LOCAL = "../wbypass"
+WLB_RELAY_MOD = "whitelist-bypass/relay"
+WLB_RELAY_LOCAL = "../whitelist-bypass/relay"
 
 
 class Builder(object):
@@ -55,6 +64,9 @@ class Builder(object):
                 "edit",
                 f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
                 f"-require={XRAY_CORE_MOD}@v0.0.0",
+                f"-replace={WBYPASS_MOD}={WBYPASS_LOCAL}",
+                f"-require={WBYPASS_MOD}@v0.0.0",
+                f"-replace={WLB_RELAY_MOD}={WLB_RELAY_LOCAL}",
             ]
         )
         if ret.returncode != 0:
@@ -193,6 +205,9 @@ class Builder(object):
                 "edit",
                 f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
                 f"-require={XRAY_CORE_MOD}@v0.0.0",
+                f"-replace={WBYPASS_MOD}={WBYPASS_LOCAL}",
+                f"-require={WBYPASS_MOD}@v0.0.0",
+                f"-replace={WLB_RELAY_MOD}={WLB_RELAY_LOCAL}",
             ]
         )
         if ret.returncode != 0:
