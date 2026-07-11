@@ -15,11 +15,13 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the fork's main after the latest
 # XTLS/main merge (v1.260327.0-165-g1448e71a) + fork patches (safari_17 preset,
-# custom spec hook) — the core version libXray is adapted to. Keep this in sync
-# with the submodules/Xray-core pointer.
+# custom spec hook) + cherry-pick of upstream #6461 (3b17dd9b) which fixes a
+# WireGuard-outbound teardown race introduced by #6287: Process dialed h.tnet
+# without the lock while Close tore down the netstack → EXC_BAD_ACCESS in the NE
+# (hard fault, reboot-tier). Keep this in sync with the submodules/Xray-core pointer.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "1448e71a506d5b78ee4c2cabc1602441d7963995"
+XRAY_CORE_VERSION = "3b17dd9bc38f161c7b565a2d8c58a5e0baf3880d"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
