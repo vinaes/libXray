@@ -26,7 +26,11 @@ class AndroidBuilder(Builder):
                 "android",
                 "-androidapi",
                 "21",
-                "-ldflags=-extldflags=-Wl,-z,max-page-size=16384",
+                # -checklinkname=0 lifts the go1.23+ //go:linkname clampdown that
+                # wlynxg/anet trips (it linknames into net.zoneCache). Hits every
+                # ABI, not just x86; without it the link fails with
+                # "invalid reference to net.zoneCache". Unrelated to the carrier.
+                "-ldflags=-checklinkname=0 -extldflags=-Wl,-z,max-page-size=16384",
             ]
         )
         if ret.returncode != 0:
