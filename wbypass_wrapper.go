@@ -43,3 +43,22 @@ func (b *BlackoutEngine) WGConfig() string { return b.e.WGConfig() }
 // WGXrayOutbound builds the xray-core WireGuard OUTBOUND JSON from the fetched
 // WG config, with the peer endpoint rewritten to the local packet endpoint.
 func (b *BlackoutEngine) WGXrayOutbound() (string, error) { return b.e.WGXrayOutbound() }
+
+// BlackoutLogCallback is the log sink the app implements to receive carrier-
+// internal Go logs (SOCKS accept/connect, relay frame dispatch, VP8 tunnel
+// state, ...). Without this wired, those logs are silently discarded — the app
+// only sees its own Swift/Java breadcrumbs, with no visibility into what the
+// carrier itself did with a connection attempt. Call once, before Start().
+type BlackoutLogCallback interface {
+	OnLog(msg string)
+}
+
+// SetBlackoutLogCallback wires (or clears, if cb is nil) the log sink used by
+// every BlackoutEngine's carrier for the life of the process.
+func SetBlackoutLogCallback(cb BlackoutLogCallback) {
+	if cb == nil {
+		wb.SetLogSink(nil)
+		return
+	}
+	wb.SetLogSink(cb.OnLog)
+}
