@@ -13,15 +13,19 @@ LIBXRAY_MOD_NAME = "github.com/xtls/libxray"
 LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
-# at the fork repo resolves correctly. Pinned to the fork's main after the latest
-# XTLS/main merge (v1.260327.0-165-g1448e71a) + fork patches (safari_17 preset,
-# custom spec hook) + cherry-pick of upstream #6461 (3b17dd9b) which fixes a
-# WireGuard-outbound teardown race introduced by #6287: Process dialed h.tnet
-# without the lock while Close tore down the netstack → EXC_BAD_ACCESS in the NE
-# (hard fault, reboot-tier). Keep this in sync with the submodules/Xray-core pointer.
+# at the fork repo resolves correctly. Pinned to the HWC line
+# (hwc1-h2-connflow-window-leak-fix @ abd7253d): the detection-resist HWC transport
+# (h2/h3 Chrome-shaped carrier) + the h2 conn-flow-window-credit leak fix + the
+# co-bound cover companion + runtime-delivered signed profile_blob + per-user hwc
+# account. This line supersedes the old 3b17dd9b pin (which itself carried the
+# #6461 WireGuard-teardown fix; that is included transitively). Keep this in sync
+# with the submodules/Xray-core pointer. NOTE: this line VENDORS a Chrome-shaped
+# quic-go fork under third_party/quic-go (the h3 carrier's QUIC fingerprint); the
+# non-local build must replace apernet/quic-go at that subdir too (see below) — Go
+# ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "3b17dd9bc38f161c7b565a2d8c58a5e0baf3880d"
+XRAY_CORE_VERSION = "abd7253dd6257b95b07a881a10363a5d7fe784ce"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
@@ -31,6 +35,40 @@ WBYPASS_MOD = "github.com/vinaes/wbypass"
 WBYPASS_LOCAL = "../wbypass"
 WLB_RELAY_MOD = "whitelist-bypass/relay"
 WLB_RELAY_LOCAL = "../whitelist-bypass/relay"
+
+# Staging (HWC): when HWC_XRAY_LOCAL points at a local xray-core checkout that
+# contains the HWC transport, redirect xray-core there instead of the pinned
+# fork, and mirror that checkout's vendored quic-go replace — Go ignores replace
+# directives inside dependencies, so it must live in this main module. Unset =>
+# stock build against the pinned fork, unchanged.
+HWC_XRAY_LOCAL = os.environ.get("HWC_XRAY_LOCAL", "").strip()
+APERNET_QUICGO_MOD = "github.com/apernet/quic-go"
+
+
+def _xray_core_mod_edits() -> list[str]:
+    if HWC_XRAY_LOCAL:
+        edits = [
+            f"-replace={XRAY_CORE_MOD}={HWC_XRAY_LOCAL}",
+            f"-require={XRAY_CORE_MOD}@v0.0.0",
+            f"-replace={APERNET_QUICGO_MOD}={HWC_XRAY_LOCAL}/third_party/quic-go",
+        ]
+    else:
+        # Non-local (CI/release) build against the pinned fork. The HWC line vendors a
+        # Chrome-shaped quic-go under third_party/quic-go; consume it as a versioned
+        # subdirectory module of the same fork at the same revision (verified: Go resolves
+        # it and ChromeShapeConfig compiles, even though its go.mod keeps the upstream
+        # module path). Without this the h3 carrier would link stock apernet/quic-go and
+        # lose its QUIC fingerprint shaping (or fail to build on ChromeShape symbols).
+        edits = [
+            f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
+            f"-require={XRAY_CORE_MOD}@v0.0.0",
+            f"-replace={APERNET_QUICGO_MOD}={XRAY_CORE_FORK}/third_party/quic-go@{XRAY_CORE_VERSION}",
+        ]
+    return edits + [
+        f"-replace={WBYPASS_MOD}={WBYPASS_LOCAL}",
+        f"-require={WBYPASS_MOD}@v0.0.0",
+        f"-replace={WLB_RELAY_MOD}={WLB_RELAY_LOCAL}",
+    ]
 
 
 class Builder(object):
@@ -58,19 +96,9 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
         if ret.returncode != 0:
             raise Exception("go mod edit go version failed")
-        # Redirect xray-core to the vinaes fork at the pinned revision.
-        ret = subprocess.run(
-            [
-                "go",
-                "mod",
-                "edit",
-                f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
-                f"-require={XRAY_CORE_MOD}@v0.0.0",
-                f"-replace={WBYPASS_MOD}={WBYPASS_LOCAL}",
-                f"-require={WBYPASS_MOD}@v0.0.0",
-                f"-replace={WLB_RELAY_MOD}={WLB_RELAY_LOCAL}",
-            ]
-        )
+        # Redirect xray-core to the vinaes fork at the pinned revision (or a
+        # local HWC checkout when HWC_XRAY_LOCAL is set).
+        ret = subprocess.run(["go", "mod", "edit"] + _xray_core_mod_edits())
         if ret.returncode != 0:
             raise Exception("go mod edit replace xray-core fork failed")
 
@@ -199,19 +227,9 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
         if ret.returncode != 0:
             raise Exception("go mod edit go version failed")
-        # Redirect xray-core to the vinaes fork at the pinned revision.
-        ret = subprocess.run(
-            [
-                "go",
-                "mod",
-                "edit",
-                f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
-                f"-require={XRAY_CORE_MOD}@v0.0.0",
-                f"-replace={WBYPASS_MOD}={WBYPASS_LOCAL}",
-                f"-require={WBYPASS_MOD}@v0.0.0",
-                f"-replace={WLB_RELAY_MOD}={WLB_RELAY_LOCAL}",
-            ]
-        )
+        # Redirect xray-core to the vinaes fork at the pinned revision (or a
+        # local HWC checkout when HWC_XRAY_LOCAL is set).
+        ret = subprocess.run(["go", "mod", "edit"] + _xray_core_mod_edits())
         if ret.returncode != 0:
             raise Exception("go mod edit replace xray-core fork failed")
 
