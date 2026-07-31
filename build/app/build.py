@@ -25,7 +25,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "abd7253dd6257b95b07a881a10363a5d7fe784ce"
+XRAY_CORE_VERSION = "e2376a1c"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
