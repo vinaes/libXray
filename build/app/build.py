@@ -25,7 +25,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "e2376a1c"
+XRAY_CORE_VERSION = "8c577071"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
@@ -43,6 +43,15 @@ WLB_RELAY_LOCAL = "../whitelist-bypass/relay"
 # stock build against the pinned fork, unchanged.
 HWC_XRAY_LOCAL = os.environ.get("HWC_XRAY_LOCAL", "").strip()
 APERNET_QUICGO_MOD = "github.com/apernet/quic-go"
+
+# The fork is consumed by commit hash and was never published to sum.golang.org,
+# so `go mod tidy` fails verifying its go.mod against the public checksum DB
+# (404, then a misleading "could not read Username for https://github.com" that
+# comes from the sumdb's own fetch attempt, not from a missing credential — the
+# repo is public). GOPRIVATE implies GONOSUMDB + GONOPROXY, so Go fetches the
+# fork straight from the repo and skips verification. setdefault, so an explicit
+# value from the environment still wins.
+os.environ.setdefault("GOPRIVATE", "github.com/vinaes/*")
 
 
 def _xray_core_mod_edits() -> list[str]:
