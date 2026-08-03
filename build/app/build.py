@@ -14,21 +14,36 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the HWC line
-# (hwc1-adopt @ 7d5a1b74): the detection-resist HWC transport (h2/h3 Chrome-shaped
+# (hwc1-adopt @ 80924b5e): the detection-resist HWC transport (h2/h3 Chrome-shaped
 # carrier) + the h2 conn-flow-window-credit leak fix + the co-bound cover companion
 # + runtime-delivered signed profile_blob + per-user hwc account. This line
 # supersedes the old 3b17dd9b pin (which itself carried the #6461 WireGuard-teardown
 # fix; that is included transitively).
 #
-# CLIENT-SIDE BEHAVIOUR CHANGE in this bump: chromeQUICPostQuantumKeyShare is true
-# again, so the QUIC ClientHello carries the X25519MLKEM768 share and the Initial
-# flight is TWO datagrams, not one. We had dropped that share to pass TSPU, but it
-# shipped bundled with two real bugs (a CRYPTO-fragmenter deadlock on short hellos
-# and a missing PING on empty Initial PTO probes) so the variable was never isolated;
-# with those fixed, 60/60 handshakes complete either way from behind TSPU (AS12389,
-# Vladivostok) at equal latency, and since Chrome 147 dropped the PQ opt-out a
-# single-datagram hello matches no shipping browser. If h3 regresses in the field,
-# this one var in transport/internet/hwc/tls_template.go is the first thing to flip.
+# chromeQUICPostQuantumKeyShare is TRUE on this pin, i.e. the upstream default —
+# the QUIC ClientHello carries X25519MLKEM768 and the Initial flight is two
+# datagrams, byte-faithful to shipping Chrome. An earlier revision of this comment
+# said the opposite, that true was fatal on our path; that was a misdiagnosis and is
+# corrected here, because the symptom is easy to misread the same way twice.
+#
+# The symptom was real: from Vladivostok (AS12389) against the production node the
+# two-datagram flight never completed while the single-datagram one connected in
+# ~0.2s. But the variable was the SNI, not this flag. Same binary, same node, same
+# day, two-datagram flight throughout, only serverName differing — amazon.co.jp
+# 10/10, s3/ec2.ap-northeast-1.amazonaws.com 4/4, www.gosuslugi.ru 11/11,
+# www.nintendo.co.jp and yandex.ru 3/3, against amazon.com 0/15 and
+# www.google.com / www.microsoft.com / www.apple.com / www.cloudflare.com /
+# www.tiktok.com / vk.com 0/3 each. Real Chrome 150 forced onto QUIC sends the same
+# two-datagram ML-KEM Initial to that node and passes, and replaying our own blocked
+# pair byte-for-byte from a foreign host arrives 2/2 — so the drop sits on the
+# Russian path and removes the packet that completes the ClientHello. Upstream's
+# 60/60 was never in conflict with ours; it used a different destination and SNI.
+#
+# ⚠️ What actually has to be watched is the SNI, not this flag: production
+# hwc_server_name is amazon.co.jp, and it must not be set to a famous domain — the
+# censor tracks the real addresses of exactly those, so presenting one on an address
+# that is not theirs is what trips the rule.
+#
 # Also carries datagram fragmentation on both carriers and the udp_demux fan-out fix
 # (one inner UDP socket -> up to 200 destinations). Keep this in sync
 # with the submodules/Xray-core pointer. NOTE: this line VENDORS a Chrome-shaped
@@ -37,7 +52,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "7d5a1b74"
+XRAY_CORE_VERSION = "80924b5e"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
