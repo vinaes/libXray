@@ -14,18 +14,30 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the HWC line
-# (hwc1-h2-connflow-window-leak-fix @ abd7253d): the detection-resist HWC transport
-# (h2/h3 Chrome-shaped carrier) + the h2 conn-flow-window-credit leak fix + the
-# co-bound cover companion + runtime-delivered signed profile_blob + per-user hwc
-# account. This line supersedes the old 3b17dd9b pin (which itself carried the
-# #6461 WireGuard-teardown fix; that is included transitively). Keep this in sync
+# (hwc1-adopt @ 7d5a1b74): the detection-resist HWC transport (h2/h3 Chrome-shaped
+# carrier) + the h2 conn-flow-window-credit leak fix + the co-bound cover companion
+# + runtime-delivered signed profile_blob + per-user hwc account. This line
+# supersedes the old 3b17dd9b pin (which itself carried the #6461 WireGuard-teardown
+# fix; that is included transitively).
+#
+# CLIENT-SIDE BEHAVIOUR CHANGE in this bump: chromeQUICPostQuantumKeyShare is true
+# again, so the QUIC ClientHello carries the X25519MLKEM768 share and the Initial
+# flight is TWO datagrams, not one. We had dropped that share to pass TSPU, but it
+# shipped bundled with two real bugs (a CRYPTO-fragmenter deadlock on short hellos
+# and a missing PING on empty Initial PTO probes) so the variable was never isolated;
+# with those fixed, 60/60 handshakes complete either way from behind TSPU (AS12389,
+# Vladivostok) at equal latency, and since Chrome 147 dropped the PQ opt-out a
+# single-datagram hello matches no shipping browser. If h3 regresses in the field,
+# this one var in transport/internet/hwc/tls_template.go is the first thing to flip.
+# Also carries datagram fragmentation on both carriers and the udp_demux fan-out fix
+# (one inner UDP socket -> up to 200 destinations). Keep this in sync
 # with the submodules/Xray-core pointer. NOTE: this line VENDORS a Chrome-shaped
 # quic-go fork under third_party/quic-go (the h3 carrier's QUIC fingerprint); the
 # non-local build must replace apernet/quic-go at that subdir too (see below) — Go
 # ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "8c577071"
+XRAY_CORE_VERSION = "7d5a1b74"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
