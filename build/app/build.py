@@ -14,7 +14,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the HWC line
-# (hwc1-adopt @ 80924b5e): the detection-resist HWC transport (h2/h3 Chrome-shaped
+# (hwc1-adopt @ 036e1f95): the detection-resist HWC transport (h2/h3 Chrome-shaped
 # carrier) + the h2 conn-flow-window-credit leak fix + the co-bound cover companion
 # + runtime-delivered signed profile_blob + per-user hwc account. This line
 # supersedes the old 3b17dd9b pin (which itself carried the #6461 WireGuard-teardown
@@ -52,7 +52,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "80924b5e"
+XRAY_CORE_VERSION = "036e1f95"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
