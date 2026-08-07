@@ -14,7 +14,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the HWC line
-# (main @ b00419ab): the detection-resist HWC transport (h2/h3 Chrome-shaped
+# (main @ a2a31cb6): the detection-resist HWC transport (h2/h3 Chrome-shaped
 # carrier) + the h2 conn-flow-window-credit leak fix + the co-bound cover companion
 # + runtime-delivered signed profile_blob + per-user hwc account. This line
 # supersedes the old 3b17dd9b pin (which itself carried the #6461 WireGuard-teardown
@@ -45,14 +45,20 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # that is not theirs is what trips the rule.
 #
 # Also carries datagram fragmentation on both carriers and the udp_demux fan-out fix
-# (one inner UDP socket -> up to 200 destinations). Keep this in sync
-# with the submodules/Xray-core pointer. NOTE: this line VENDORS a Chrome-shaped
+# (one inner UDP socket -> up to maxUDPBranches destinations). 0c2dabe1 splits that
+# fan-out cap by platform (iOS 64 / other 200). a2a31cb6 is the ACTUAL iOS-memory
+# fix: it clamps the QUIC receive windows on iOS (4 MiB conn / 2 MiB stream vs
+# Chrome's 15/6) in applyChromeQUICConfig. The window is the memory we must buffer
+# (live, GOMEMLIMIT can't reclaim it); Chrome's 15 MiB conn window alone blew the
+# NE's ~50MB jetsam budget on a single download (~19->44 MB, then killed). Off iOS
+# the clamp is a MaxUint64 no-op. Keep this in sync with the submodules/Xray-core
+# pointer. NOTE: this line VENDORS a Chrome-shaped
 # quic-go fork under third_party/quic-go (the h3 carrier's QUIC fingerprint); the
 # non-local build must replace apernet/quic-go at that subdir too (see below) — Go
 # ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "b00419ab"
+XRAY_CORE_VERSION = "a2a31cb6"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
