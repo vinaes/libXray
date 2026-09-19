@@ -14,7 +14,8 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the HWC line
-# (main @ a2a31cb6): the detection-resist HWC transport (h2/h3 Chrome-shaped
+# (main @ e53e496e, the upstream-26.9.8 merge; also routes REALITY through the
+# fork's third_party/reality, see below): the detection-resist HWC transport (h2/h3 Chrome-shaped
 # carrier) + the h2 conn-flow-window-credit leak fix + the co-bound cover companion
 # + runtime-delivered signed profile_blob + per-user hwc account. This line
 # supersedes the old 3b17dd9b pin (which itself carried the #6461 WireGuard-teardown
@@ -58,7 +59,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # ignores replace directives inside dependencies, so it must live in this module.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "a2a31cb6"
+XRAY_CORE_VERSION = "e53e496e"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
@@ -76,6 +77,9 @@ WLB_RELAY_LOCAL = "../whitelist-bypass/relay"
 # stock build against the pinned fork, unchanged.
 HWC_XRAY_LOCAL = os.environ.get("HWC_XRAY_LOCAL", "").strip()
 APERNET_QUICGO_MOD = "github.com/apernet/quic-go"
+# REALITY is patched the same way (third_party/reality, its own go.mod); without
+# this replace the stock upstream REALITY gets linked silently.
+REALITY_MOD = "github.com/xtls/reality"
 
 # The fork is consumed by commit hash and was never published to sum.golang.org,
 # so `go mod tidy` fails verifying its go.mod against the public checksum DB
@@ -93,6 +97,7 @@ def _xray_core_mod_edits() -> list[str]:
             f"-replace={XRAY_CORE_MOD}={HWC_XRAY_LOCAL}",
             f"-require={XRAY_CORE_MOD}@v0.0.0",
             f"-replace={APERNET_QUICGO_MOD}={HWC_XRAY_LOCAL}/third_party/quic-go",
+            f"-replace={REALITY_MOD}={HWC_XRAY_LOCAL}/third_party/reality",
         ]
     else:
         # Non-local (CI/release) build against the pinned fork. The HWC line vendors a
@@ -105,6 +110,7 @@ def _xray_core_mod_edits() -> list[str]:
             f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
             f"-require={XRAY_CORE_MOD}@v0.0.0",
             f"-replace={APERNET_QUICGO_MOD}={XRAY_CORE_FORK}/third_party/quic-go@{XRAY_CORE_VERSION}",
+            f"-replace={REALITY_MOD}={XRAY_CORE_FORK}/third_party/reality@{XRAY_CORE_VERSION}",
         ]
     return edits + [
         f"-replace={WBYPASS_MOD}={WBYPASS_LOCAL}",
