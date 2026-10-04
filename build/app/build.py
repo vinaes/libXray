@@ -14,7 +14,7 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the HWC line
-# (main @ e53e496e, the upstream-26.9.8 merge; also routes REALITY through the
+# (main @ 91e0adc9, on top of the upstream-26.9.8 merge; also routes REALITY through the
 # fork's third_party/reality, see below): the detection-resist HWC transport (h2/h3 Chrome-shaped
 # carrier) + the h2 conn-flow-window-credit leak fix + the co-bound cover companion
 # + runtime-delivered signed profile_blob + per-user hwc account. This line
@@ -57,9 +57,26 @@ LIBXRAY_GO_VERSION = "1.26.2"
 # quic-go fork under third_party/quic-go (the h3 carrier's QUIC fingerprint); the
 # non-local build must replace apernet/quic-go at that subdir too (see below) — Go
 # ignores replace directives inside dependencies, so it must live in this module.
+#
+# Bumped to 91e0adc9 (fork main, 2026-10-04), which puts the submodule pointer and
+# this pin back in sync (the rule at the end of the paragraph above). On top of
+# e53e496e:
+#   22071f46 — upstream merge to v26.9.8+3: XHTTP data-race and GOAWAY fixes, the
+#     partially-filled-buffer write fix, stats/routing API races, and the QUIC-sniffer /
+#     WebSocket / HTTP-inbound panics. Client-relevant: these are the races/panics a
+#     Network Extension meets on reconnect.
+#   cfdd1192 — HWC h3 UDP flows open in one RTT (early datagrams held until the CONNECT
+#     response). Client-side in effect: matters only when the profile talks to an is_hwc
+#     node, inert otherwise.
+#   91e0adc9 — splithttp: HTTP2Config.MaxReadFrameSize=16384 on the XHTTP *inbound*
+#     (carrier-node RSS); 7953a010 — dokodemo evicts idle FakeUDP tproxy sockets
+#     (router fd exhaustion). Both node/router-side, inert in this framework.
+# Upstream's Go 1.27 and ChromeParrot are still NOT taken (see the toolchain note in
+# pub-vpn/docker/v2ray/Dockerfile), so the QUIC wire fingerprint of existing profiles
+# does not move with this bump.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
 XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "e53e496e"
+XRAY_CORE_VERSION = "91e0adc9"
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local

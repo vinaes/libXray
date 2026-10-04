@@ -2,7 +2,7 @@ module github.com/xtls/libxray
 
 go 1.26.2
 
-replace github.com/xtls/xray-core => github.com/vinaes/xray-core v0.0.0-20260916215442-e53e496e00eb
+replace github.com/xtls/xray-core => github.com/vinaes/xray-core v0.0.0-20261003230519-91e0adc95a12
 
 require (
 	github.com/stretchr/testify v1.12.1
@@ -100,9 +100,9 @@ require (
 	whitelist-bypass/relay v0.0.0-00010101000000-000000000000 // indirect
 )
 
-replace github.com/apernet/quic-go => github.com/vinaes/xray-core/third_party/quic-go v0.0.0-20260916215442-e53e496e00eb
+replace github.com/apernet/quic-go => github.com/vinaes/xray-core/third_party/quic-go v0.0.0-20261003230519-91e0adc95a12
 
-replace github.com/xtls/reality => github.com/vinaes/xray-core/third_party/reality v0.0.0-20260916215442-e53e496e00eb
+replace github.com/xtls/reality => github.com/vinaes/xray-core/third_party/reality v0.0.0-20261003230519-91e0adc95a12
 
 replace github.com/vinaes/wbypass => ../wbypass
 
