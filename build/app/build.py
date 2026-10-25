@@ -10,7 +10,10 @@ from app.cmd import (
 )
 
 LIBXRAY_MOD_NAME = "github.com/xtls/libxray"
-LIBXRAY_GO_VERSION = "1.26.2"
+# >= 1.26.3: older 1.26.x probe futex_time64 on 32-bit Linux and rely on -ENOSYS,
+# but the seccomp filter on Android 8-10 (API 26-29) kills the process instead,
+# so :vpn died with SIGSYS on every armeabi-v7a/x86 device of that age (#152).
+LIBXRAY_GO_VERSION = "1.26.10"
 # Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
 # original module path github.com/xtls/xray-core, so a replace directive pointing
 # at the fork repo resolves correctly. Pinned to the HWC line

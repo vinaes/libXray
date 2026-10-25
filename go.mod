@@ -1,6 +1,6 @@
 module github.com/xtls/libxray
 
-go 1.26.2
+go 1.26.10
 
 replace github.com/xtls/xray-core => github.com/vinaes/xray-core v0.0.0-20261003230519-91e0adc95a12
 
