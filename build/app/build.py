@@ -14,17 +14,15 @@ LIBXRAY_MOD_NAME = "github.com/xtls/libxray"
 # but the seccomp filter on Android 8-10 (API 26-29) kills the process instead,
 # so :vpn died with SIGSYS on every armeabi-v7a/x86 device of that age (#152).
 LIBXRAY_GO_VERSION = "1.26.10"
-# Build against the vinaes/Xray-core fork instead of upstream. The fork keeps the
-# original module path github.com/xtls/xray-core, so a replace directive pointing
-# at the fork repo resolves correctly. Pinned to the HWC line
-# (main @ 91e0adc9, on top of the upstream-26.9.8 merge; also routes REALITY through the
-# fork's third_party/reality, see below): the detection-resist HWC transport (h2/h3 Chrome-shaped
-# carrier) + the h2 conn-flow-window-credit leak fix + the co-bound cover companion
-# + runtime-delivered signed profile_blob + per-user hwc account. This line
-# supersedes the old 3b17dd9b pin (which itself carried the #6461 WireGuard-teardown
-# fix; that is included transitively).
+# Build against our Xray-core fork, taken from the TheLoopKit submodule
+# (submodules/Xray-core) — the same checkout the Windows kit builds from
+# (windows_build.bat), so every platform ships the core the submodule pointer names.
+# The fork keeps the module path github.com/xtls/xray-core, so a replace directive
+# pointing at the checkout resolves. Until 2026-10-27 this was a hash pin on GitHub
+# (last 91e0adc9) that lagged behind the submodule; bump the core by moving the
+# submodule pointer now, nothing here.
 #
-# chromeQUICPostQuantumKeyShare is TRUE on this pin, i.e. the upstream default —
+# chromeQUICPostQuantumKeyShare is TRUE in the core, i.e. the upstream default —
 # the QUIC ClientHello carries X25519MLKEM768 and the Initial flight is two
 # datagrams, byte-faithful to shipping Chrome. An earlier revision of this comment
 # said the opposite, that true was fatal on our path; that was a misdiagnosis and is
@@ -48,38 +46,26 @@ LIBXRAY_GO_VERSION = "1.26.10"
 # censor tracks the real addresses of exactly those, so presenting one on an address
 # that is not theirs is what trips the rule.
 #
-# Also carries datagram fragmentation on both carriers and the udp_demux fan-out fix
+# The core also carries datagram fragmentation on both carriers and the udp_demux fan-out fix
 # (one inner UDP socket -> up to maxUDPBranches destinations). 0c2dabe1 splits that
 # fan-out cap by platform (iOS 64 / other 200). a2a31cb6 is the ACTUAL iOS-memory
 # fix: it clamps the QUIC receive windows on iOS (4 MiB conn / 2 MiB stream vs
 # Chrome's 15/6) in applyChromeQUICConfig. The window is the memory we must buffer
 # (live, GOMEMLIMIT can't reclaim it); Chrome's 15 MiB conn window alone blew the
 # NE's ~50MB jetsam budget on a single download (~19->44 MB, then killed). Off iOS
-# the clamp is a MaxUint64 no-op. Keep this in sync with the submodules/Xray-core
-# pointer. NOTE: this line VENDORS a Chrome-shaped
-# quic-go fork under third_party/quic-go (the h3 carrier's QUIC fingerprint); the
-# non-local build must replace apernet/quic-go at that subdir too (see below) — Go
-# ignores replace directives inside dependencies, so it must live in this module.
+# the clamp is a MaxUint64 no-op.
 #
-# Bumped to 91e0adc9 (fork main, 2026-10-04), which puts the submodule pointer and
-# this pin back in sync (the rule at the end of the paragraph above). On top of
-# e53e496e:
-#   22071f46 — upstream merge to v26.9.8+3: XHTTP data-race and GOAWAY fixes, the
-#     partially-filled-buffer write fix, stats/routing API races, and the QUIC-sniffer /
-#     WebSocket / HTTP-inbound panics. Client-relevant: these are the races/panics a
-#     Network Extension meets on reconnect.
-#   cfdd1192 — HWC h3 UDP flows open in one RTT (early datagrams held until the CONNECT
-#     response). Client-side in effect: matters only when the profile talks to an is_hwc
-#     node, inert otherwise.
-#   91e0adc9 — splithttp: HTTP2Config.MaxReadFrameSize=16384 on the XHTTP *inbound*
-#     (carrier-node RSS); 7953a010 — dokodemo evicts idle FakeUDP tproxy sockets
-#     (router fd exhaustion). Both node/router-side, inert in this framework.
 # Upstream's Go 1.27 and ChromeParrot are still NOT taken (see the toolchain note in
 # pub-vpn/docker/v2ray/Dockerfile), so the QUIC wire fingerprint of existing profiles
-# does not move with this bump.
+# does not move with the core.
 XRAY_CORE_MOD = "github.com/xtls/xray-core"
-XRAY_CORE_FORK = "github.com/vinaes/xray-core"
-XRAY_CORE_VERSION = "91e0adc9"
+# Relative to the libXray module (init_go_env runs there). XRAY_CORE_LOCAL points the
+# build at another checkout, e.g. a worktree under test; HWC_XRAY_LOCAL is its old name.
+XRAY_CORE_LOCAL = (
+    os.environ.get("XRAY_CORE_LOCAL", "").strip()
+    or os.environ.get("HWC_XRAY_LOCAL", "").strip()
+    or "../Xray-core"
+)
 # Blackout fallback carrier, co-bound into THIS framework (via wbypass_wrapper.go)
 # so xray + wbypass share ONE Go runtime — two gomobile runtimes in the NE crash
 # in runtime.load_g. init_go_env regenerates go.mod from scratch, so these local
@@ -90,53 +76,42 @@ WBYPASS_LOCAL = "../wbypass"
 WLB_RELAY_MOD = "whitelist-bypass/relay"
 WLB_RELAY_LOCAL = "../whitelist-bypass/relay"
 
-# Staging (HWC): when HWC_XRAY_LOCAL points at a local xray-core checkout that
-# contains the HWC transport, redirect xray-core there instead of the pinned
-# fork, and mirror that checkout's vendored quic-go replace — Go ignores replace
-# directives inside dependencies, so it must live in this main module. Unset =>
-# stock build against the pinned fork, unchanged.
-HWC_XRAY_LOCAL = os.environ.get("HWC_XRAY_LOCAL", "").strip()
 APERNET_QUICGO_MOD = "github.com/apernet/quic-go"
 # REALITY is patched the same way (third_party/reality, its own go.mod); without
 # this replace the stock upstream REALITY gets linked silently.
 REALITY_MOD = "github.com/xtls/reality"
 
-# The fork is consumed by commit hash and was never published to sum.golang.org,
-# so `go mod tidy` fails verifying its go.mod against the public checksum DB
-# (404, then a misleading "could not read Username for https://github.com" that
-# comes from the sumdb's own fetch attempt, not from a missing credential — the
-# repo is public). GOPRIVATE implies GONOSUMDB + GONOPROXY, so Go fetches the
-# fork straight from the repo and skips verification. setdefault, so an explicit
-# value from the environment still wins.
-os.environ.setdefault("GOPRIVATE", "github.com/vinaes/*")
-
 
 def _xray_core_mod_edits() -> list[str]:
-    if HWC_XRAY_LOCAL:
-        edits = [
-            f"-replace={XRAY_CORE_MOD}={HWC_XRAY_LOCAL}",
-            f"-require={XRAY_CORE_MOD}@v0.0.0",
-            f"-replace={APERNET_QUICGO_MOD}={HWC_XRAY_LOCAL}/third_party/quic-go",
-            f"-replace={REALITY_MOD}={HWC_XRAY_LOCAL}/third_party/reality",
-        ]
-    else:
-        # Non-local (CI/release) build against the pinned fork. The HWC line vendors a
-        # Chrome-shaped quic-go under third_party/quic-go; consume it as a versioned
-        # subdirectory module of the same fork at the same revision (verified: Go resolves
-        # it and ChromeShapeConfig compiles, even though its go.mod keeps the upstream
-        # module path). Without this the h3 carrier would link stock apernet/quic-go and
-        # lose its QUIC fingerprint shaping (or fail to build on ChromeShape symbols).
-        edits = [
-            f"-replace={XRAY_CORE_MOD}={XRAY_CORE_FORK}@{XRAY_CORE_VERSION}",
-            f"-require={XRAY_CORE_MOD}@v0.0.0",
-            f"-replace={APERNET_QUICGO_MOD}={XRAY_CORE_FORK}/third_party/quic-go@{XRAY_CORE_VERSION}",
-            f"-replace={REALITY_MOD}={XRAY_CORE_FORK}/third_party/reality@{XRAY_CORE_VERSION}",
-        ]
-    return edits + [
+    # The core vendors a Chrome-shaped quic-go (the h3 carrier's QUIC fingerprint) and a
+    # patched REALITY under third_party/, each with its own go.mod. Go ignores replace
+    # directives inside dependencies, so they must be mirrored in this module; without
+    # them stock apernet/quic-go and upstream REALITY get linked silently.
+    return [
+        f"-replace={XRAY_CORE_MOD}={XRAY_CORE_LOCAL}",
+        f"-require={XRAY_CORE_MOD}@v0.0.0",
+        f"-replace={APERNET_QUICGO_MOD}={XRAY_CORE_LOCAL}/third_party/quic-go",
+        f"-replace={REALITY_MOD}={XRAY_CORE_LOCAL}/third_party/reality",
         f"-replace={WBYPASS_MOD}={WBYPASS_LOCAL}",
         f"-require={WBYPASS_MOD}@v0.0.0",
         f"-replace={WLB_RELAY_MOD}={WLB_RELAY_LOCAL}",
     ]
+
+
+def _report_xray_core():
+    # A submodule that was never checked out is an empty directory; fail here rather
+    # than in go mod tidy with a confusing error.
+    if not os.path.isfile(os.path.join(XRAY_CORE_LOCAL, "go.mod")):
+        raise Exception(
+            f"Xray-core not found at {XRAY_CORE_LOCAL}: "
+            "run git submodule update --init submodules/Xray-core"
+        )
+    rev = subprocess.run(
+        ["git", "-C", XRAY_CORE_LOCAL, "describe", "--always", "--dirty"],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    print(f"xray-core: {XRAY_CORE_LOCAL} @ {rev or 'unknown'}")
 
 
 class Builder(object):
@@ -164,8 +139,8 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
         if ret.returncode != 0:
             raise Exception("go mod edit go version failed")
-        # Redirect xray-core to the vinaes fork at the pinned revision (or a
-        # local HWC checkout when HWC_XRAY_LOCAL is set).
+        # Redirect xray-core to the local fork checkout (the submodule by default).
+        _report_xray_core()
         ret = subprocess.run(["go", "mod", "edit"] + _xray_core_mod_edits())
         if ret.returncode != 0:
             raise Exception("go mod edit replace xray-core fork failed")
@@ -295,8 +270,8 @@ class Builder(object):
         ret = subprocess.run(["go", "mod", "edit", f"-go={LIBXRAY_GO_VERSION}"])
         if ret.returncode != 0:
             raise Exception("go mod edit go version failed")
-        # Redirect xray-core to the vinaes fork at the pinned revision (or a
-        # local HWC checkout when HWC_XRAY_LOCAL is set).
+        # Redirect xray-core to the local fork checkout (the submodule by default).
+        _report_xray_core()
         ret = subprocess.run(["go", "mod", "edit"] + _xray_core_mod_edits())
         if ret.returncode != 0:
             raise Exception("go mod edit replace xray-core fork failed")

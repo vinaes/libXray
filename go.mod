@@ -2,7 +2,7 @@ module github.com/xtls/libxray
 
 go 1.26.10
 
-replace github.com/xtls/xray-core => github.com/vinaes/xray-core v0.0.0-20261003230519-91e0adc95a12
+replace github.com/xtls/xray-core => ../Xray-core
 
 require (
 	github.com/stretchr/testify v1.12.1
@@ -25,8 +25,8 @@ require (
 	github.com/bogdanfinn/websocket v1.5.5-barnius // indirect
 	github.com/cbeuw/connutil v1.0.1 // indirect
 	github.com/cloudflare/circl v1.6.5 // indirect
-	github.com/florianl/go-nfqueue/v2 v2.0.2 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/florianl/go-nfqueue/v2 v2.1.0 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/google/btree v1.1.3 // indirect
@@ -43,8 +43,8 @@ require (
 	github.com/koron/go-ssdp v0.0.4 // indirect
 	github.com/libp2p/go-nat v1.0.1-0.20250821073202-01afc089f138 // indirect
 	github.com/libp2p/go-netroute v0.2.1 // indirect
-	github.com/mdlayher/netlink v1.9.0 // indirect
-	github.com/mdlayher/socket v0.5.1 // indirect
+	github.com/mdlayher/netlink v1.11.2 // indirect
+	github.com/mdlayher/socket v0.6.0 // indirect
 	github.com/miekg/dns v1.1.73 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pion/datachannel v1.6.0 // indirect
@@ -69,11 +69,11 @@ require (
 	github.com/quic-go/quic-go v0.60.0 // indirect
 	github.com/refraction-networking/utls v1.8.3-0.20260301010127-aa6edf4b11af // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/sagernet/fswatch v0.1.1 // indirect
-	github.com/sagernet/gvisor v0.0.0-20250811.0-sing-box-mod.1 // indirect
-	github.com/sagernet/netlink v0.0.0-20240612041022-b9a21c07ac6a // indirect
-	github.com/sagernet/nftables v0.3.0-mod.2 // indirect
-	github.com/sagernet/sing v0.8.0 // indirect
+	github.com/sagernet/fswatch v0.1.2 // indirect
+	github.com/sagernet/gvisor v0.0.0-20260727.0-sing-box-mod.1 // indirect
+	github.com/sagernet/netlink v0.0.0-20260814022025-64455d367bbf // indirect
+	github.com/sagernet/nftables v0.3.0-mod.4 // indirect
+	github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0 // indirect
 	github.com/sagernet/sing-shadowsocks v0.2.7 // indirect
 	github.com/sagernet/sing-tun v0.8.10-0.20260502074200-87904db3a2c1 // indirect
 	github.com/tam7t/hpkp v0.0.0-20160821193359-2b70b4024ed5 // indirect
@@ -83,12 +83,12 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
+	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20250521234502-f333402bd9cb // indirect
 	golang.zx2c4.com/wireguard/windows v1.0.1 // indirect
@@ -100,9 +100,9 @@ require (
 	whitelist-bypass/relay v0.0.0-00010101000000-000000000000 // indirect
 )
 
-replace github.com/apernet/quic-go => github.com/vinaes/xray-core/third_party/quic-go v0.0.0-20261003230519-91e0adc95a12
+replace github.com/apernet/quic-go => ../Xray-core/third_party/quic-go
 
-replace github.com/xtls/reality => github.com/vinaes/xray-core/third_party/reality v0.0.0-20261003230519-91e0adc95a12
+replace github.com/xtls/reality => ../Xray-core/third_party/reality
 
 replace github.com/vinaes/wbypass => ../wbypass
 
